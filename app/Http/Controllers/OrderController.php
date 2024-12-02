@@ -430,6 +430,9 @@ class OrderController extends Controller
         // Step 2: Validate the input data
         $data = $request->validate([
             'selected_tsr_id' => 'required|exists:orders,id', // Ensure selected TSR exists
+            'products' => 'required|array|min:1',
+            'products.*' => 'string',
+            'description' => 'nullable|string',
             'revise_reason' => 'string|max:500', // Revise reason is required
             'notes' => 'nullable|string', // Optional notes for the revision
             'files.*' => 'nullable|file|max:51200', // Optional file uploads
@@ -484,6 +487,8 @@ class OrderController extends Controller
         // Step 6: Create the new Revised TSR
         $revisedTSR = $order->replicate();
         $revisedTSR->serial_number = $newSerialNumber; // Set the new serial number
+        $revisedTSR->product_code = json_encode($data['products']); // Update the products_code field with new data from the request
+        $revisedTSR->description =$data['description'] . "\n\nTHE REASON OF REVISE IS:\n" . $data['revise_reason'];
         $revisedTSR->save(); // Save the new TSR
 
         // $newTSRId = $revisedTSR->id;

@@ -76,100 +76,98 @@
             @endif
 
             @if ($action['action'] == 'Revise')
-                        <!-- Hidden Fields for Action and Order -->
-                        <input type="hidden" name="action" value="Revise">
-                        {{-- <input type="hidden" name="order_id" value="{{ $order->id }}"> --}}
-                        <input type="hidden" name="selected_tsr_id" value="{{ $order->id }}">
+                                    <!-- Hidden Fields for Action and Order -->
+                                    <input type="hidden" name="action" value="Revise">
+                                    {{-- <input type="hidden" name="order_id" value="{{ $order->id }}"> --}}
+                                    <input type="hidden" name="selected_tsr_id" value="{{ $order->id }}">
 
 
-                        <!-- Customer Name -->
-                        <tr>
-                            <th scope="row">{{ __('Customer') }}:</th>
-                            <td>
-                                <input type="text" name="customer_name" id="customer_name" class="form-control"
-                                    value="{{ old('customer_name', $order->customer_name) }}" readonly>
-                                <input type="hidden" name="customer_name_hidden" value="{{ $order->customer_name }}">
-                            </td>
-                        </tr>
+                                    <!-- Customer Name -->
+                                    <tr>
+                                        <th scope="row">{{ __('Customer') }}:</th>
+                                        <td>
+                                            <input type="text" name="customer_name" id="customer_name" class="form-control"
+                                                value="{{ old('customer_name', $order->customer_name) }}" readonly>
+                                            <input type="hidden" name="customer_name_hidden" value="{{ $order->customer_name }}">
+                                        </td>
+                                    </tr>
 
-                        <!-- Project Name -->
-                        <tr>
-                            <th scope="row">{{ __('Project') }}:</th>
-                            <td>
-                                <input type="text" name="project_name" id="project_name" class="form-control"
-                                    value="{{ old('project_name', $order->project_name) }}" readonly>
-                                <input type="hidden" name="project_name_hidden" value="{{ $order->project_name }}">
-                            </td>
-                        </tr>
+                                    <!-- Project Name -->
+                                    <tr>
+                                        <th scope="row">{{ __('Project') }}:</th>
+                                        <td>
+                                            <input type="text" name="project_name" id="project_name" class="form-control"
+                                                value="{{ old('project_name', $order->project_name) }}" readonly>
+                                            <input type="hidden" name="project_name_hidden" value="{{ $order->project_name }}">
+                                        </td>
+                                    </tr>
 
-                        <!-- Product Code -->
-                        <tr>
-                            <th scope="row">{{ __('Product') }}:</th>
-                            <td>
-                                <input type="text" name="product_code" id="product_code" class="form-control"
-                                    value="{{ old('product_code', $order->product_code) }}" readonly>
-                                <input type="hidden" name="product_code_hidden" value="{{ $order->product_code }}">
-                            </td>
-                        </tr>
+                                    <!-- Product Code -->
+                                    <!-- <tr>
+                                        <th scope="row">{{ __('Product') }}:</th>
+                                        <td>
+                                            <input type="text" name="product_code" id="product_code" class="form-control"
+                                                value="{{ old('product_code', $order->product_code) }}" readonly>
+                                            <input type="hidden" name="product_code_hidden" value="{{ $order->product_code }}">
+                                        </td>
+                                    </tr> -->
 
-                        <!-- Product Code -->
-                        <tr>
-                            <th scope="row">{{ __('Product') }}:</th>
-                            <td>
-                            @foreach ($products as $product)
+                                    <!-- Product Code -->
+                                    <tr>
+                                        <th scope="row">{{ __('Product') }}:</th>
+                                        <td>
+                                            @foreach ($products as $product)
+                                                    @php
+                                                        $prdct = \App\Enum\ProductsEnum::getItem($product);
+                                                    @endphp
+                                                    <div class="form-check form-check-inline">
+                                                        <input class="form-check-input" type="checkbox" id="item{{ $prdct->code() }}" name="products[]"
+                                                            value="{{ $prdct->code() }}" @checked(in_array($prdct->code(), json_decode($order->product_code)))>
+                                                        <label class="form-check-label" for="item{{ $prdct->code() }}">{{ $prdct->name() }}</label>
+                                                    </div>
+                                            @endforeach
+                                            <!-- <input type="text" name="product_code" id="product_code" class="form-control"
+                                                                        value="{{ old('product_code', $order->product_code) }}" readonly>
+                                                                    <input type="hidden" name="product_code_hidden" value="{{ $order->product_code }}"> -->
+                                        </td>
+                                    </tr>
+
+                                    <!-- Title Selection -->
+                                    <tr>
+                                        <th scope="row">{{ __('Title') }}:</th>
+                                        <td>
                                             @php
-                                                $prdct = \App\Enum\ProductsEnum::getItem($product);
+                // Fetch the list of titles
+                $titles = App\Repo\OrdersRepo::getTitlesList();
                                             @endphp
-                                            <div class="form-check form-check-inline">
-                                                <input class="form-check-input" type="checkbox"
-                                                    id="item{{ $prdct->code() }}" name="products[]"
-                                                    value="{{ $prdct->code() }}">
-                                                <label class="form-check-label"
-                                                    for="item{{ $prdct->code() }}">{{ $prdct->name() }}</label>
-                                            </div>
-                                        @endforeach
-                                <input type="text" name="product_code" id="product_code" class="form-control"
-                                    value="{{ old('product_code', $order->product_code) }}" readonly>
-                                <input type="hidden" name="product_code_hidden" value="{{ $order->product_code }}">
-                            </td>
-                        </tr>
+                                            <select name="title" id="title" class="form-select" required>
+                                                @foreach ($titles as $code => $text)
+                                                    <option value="{{ $code }}" @if ($code == $order->title) selected @endif>
+                                                        {{ $text }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                            <input type="hidden" name="current_title" value="{{ $order->title }}">
+                                        </td>
+                                    </tr>
 
-                        <!-- Title Selection -->
-                        <tr>
-                            <th scope="row">{{ __('Title') }}:</th>
-                            <td>
-                                @php
-                                    // Fetch the list of titles
-                                    $titles = App\Repo\OrdersRepo::getTitlesList();
-                                @endphp
-                                <select name="title" id="title" class="form-select" required>
-                                    @foreach ($titles as $code => $text)
-                                        <option value="{{ $code }}" @if ($code == $order->title) selected @endif>
-                                            {{ $text }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                <input type="hidden" name="current_title" value="{{ $order->title }}">
-                            </td>
-                        </tr>
+                                    <!-- Description Name -->
+                                    <tr>
+                                        <th scope="row">{{ __('Description') }}:</th>
+                                        <td>
+                                            <textarea type="text" name="description" id="description" class="form-control">{{ old('description', $order->description) }}</textarea>
+                                            <input type="hidden" name="description_hidden" value="{{ $order->description }}">
+                                        </td>
+                                    </tr>
 
-                        <!-- Description Name -->
-                        <tr>
-                            <th scope="row">{{ __('Description') }}:</th>
-                            <td>
-                                <textarea type="text" name="description" id="description" class="form-control">{{ old('description', $order->description) }}</textarea>
-                                <input type="hidden" name="description_hidden" value="{{ $order->description }}">
-                            </td>
-                        </tr>
-
-                        <!-- Revise Reason -->
-                        <tr>
-                            <th scope="row">{{ __('Revise Reason') }}:</th>
-                            <td>
-                                <textarea name="revise_reason" id="revise_reason" class="form-control" rows="3"
-                                    required>{{ old('revise_reason') }}</textarea>
-                            </td>
-                        </tr>
+                                    <!-- Revise Reason -->
+                                    <tr>
+                                        <th scope="row">{{ __('Revise Reason') }}:</th>
+                                        <td>
+                                            <textarea name="revise_reason" id="revise_reason" class="form-control" rows="3"
+                                                required>{{ old('revise_reason') }}</textarea>
+                                        </td>
+                                    </tr>
             @endif
 
             @if ($action['notes']['shown'])
