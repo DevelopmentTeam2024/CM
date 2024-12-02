@@ -59,9 +59,10 @@
                             $filesCounter = 1;
                         @endphp
                         @foreach ($order->files as $file)
-                            <a href="{{ asset($file->path) }}" download="{{ $file->filename }}" class="btn btn-secondary">
-                                {{ str_pad($filesCounter, 3, '0', STR_PAD_LEFT) }}.{{ $file->file_ext }}
+                        <a href="{{ asset($file->path) }}" download="{{ $file->filename }}">
+                                {{ str_pad($loop->iteration, 3, '0', STR_PAD_LEFT) }}. {{ $file->filename }}
                             </a>
+                            <br>
                             @php
                                 $filesCounter++;
                             @endphp
@@ -69,10 +70,10 @@
 
                         @foreach ($order->statuses as $status)
                             @foreach ($status->files as $file)
-                                <a href="{{ asset($file->path) }}" download="{{ $file->filename }}"
-                                    class="btn btn-secondary">
-                                    {{ str_pad($filesCounter, 3, '0', STR_PAD_LEFT) }}.{{ $file->file_ext }}
-                                </a>
+                            <a href="{{ asset($file->path) }}" download="{{ $file->filename }}">
+                                {{ str_pad($loop->iteration, 3, '0', STR_PAD_LEFT) }}. {{ $file->filename }}
+                            </a>
+                            <br>
                                 @php
                                     $filesCounter++;
                                 @endphp
