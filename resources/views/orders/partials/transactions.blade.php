@@ -67,9 +67,10 @@
                         <td colspan="5">
                             @foreach ($status->files as $file)
                                 <a href="{{ asset($file->path) }}" download="{{ $file->filename }}"
-                                    class="btn btn-secondary">
-                                    {{ str_pad($loop->iteration, 3, '0', STR_PAD_LEFT) }}.{{ $file->file_ext }}
+                                    >
+                                    {{ $file->filename }}
                                 </a>
+                                <br>
                             @endforeach
                         </td>
                     </tr>

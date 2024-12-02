@@ -112,6 +112,28 @@
                             </td>
                         </tr>
 
+                        <!-- Product Code -->
+                        <tr>
+                            <th scope="row">{{ __('Product') }}:</th>
+                            <td>
+                            @foreach ($products as $product)
+                                            @php
+                                                $prdct = \App\Enum\ProductsEnum::getItem($product);
+                                            @endphp
+                                            <div class="form-check form-check-inline">
+                                                <input class="form-check-input" type="checkbox"
+                                                    id="item{{ $prdct->code() }}" name="products[]"
+                                                    value="{{ $prdct->code() }}">
+                                                <label class="form-check-label"
+                                                    for="item{{ $prdct->code() }}">{{ $prdct->name() }}</label>
+                                            </div>
+                                        @endforeach
+                                <input type="text" name="product_code" id="product_code" class="form-control"
+                                    value="{{ old('product_code', $order->product_code) }}" readonly>
+                                <input type="hidden" name="product_code_hidden" value="{{ $order->product_code }}">
+                            </td>
+                        </tr>
+
                         <!-- Title Selection -->
                         <tr>
                             <th scope="row">{{ __('Title') }}:</th>
@@ -128,6 +150,15 @@
                                     @endforeach
                                 </select>
                                 <input type="hidden" name="current_title" value="{{ $order->title }}">
+                            </td>
+                        </tr>
+
+                        <!-- Description Name -->
+                        <tr>
+                            <th scope="row">{{ __('Description') }}:</th>
+                            <td>
+                                <textarea type="text" name="description" id="description" class="form-control">{{ old('description', $order->description) }}</textarea>
+                                <input type="hidden" name="description_hidden" value="{{ $order->description }}">
                             </td>
                         </tr>
 
@@ -270,14 +301,6 @@
                 </tr>
             @endif
 
-            @if ($action['items_count'])
-                <tr>
-                    <th>* {{ __('Noumber of Items') }}</th>
-                    <td>
-                        <input type="number" name="items_count" id="items_count" class="form-control" required>
-                    </td>
-                </tr>
-            @endif
 
             @if ($action['set_priority'])
                 <tr>
@@ -309,9 +332,9 @@
 
             @if ($action['set_expected_date'])
                 <tr>
-                    <th>* {{ __('Expected Date') }}</th>
+                    <th>{{ __('Expected Date') }}</th>
                     <td>
-                        <input type="date" name="expected_date" id="expected_date" class="form-control" required>
+                        <input type="date" name="expected_date" id="expected_date" class="form-control">
                     </td>
                 </tr>
             @endif

@@ -547,9 +547,11 @@ class OrderController extends Controller
     {
         // $action = (new StatusService($inquiry->status))->getActionfromList($action);
         // dd($action);
+        $products = ProductsEnum::list();
         $action = Actions::run($action);
         return view('orders.partials.action', [
             'projects' => Project::all(),
+            'products' => $products,
             'order' => $inquiry,
             'status' => $inquiry->status,
             'action' => $action
