@@ -14,7 +14,7 @@ class Actions
             'required' => false // Notes are required for revise to explain why it's being revised
         ],
         'attachments' => [
-            'shown' => false,
+            'shown' => true,
             'required' => false // Attachments are optional during revise
         ],
         'set_priority' => true, // Allow priority to be set during revise

@@ -15,6 +15,9 @@
 
     <link href="{{ asset('assets/vendor/DataTables-bs5-jq3/datatables.min.css') }}" rel="stylesheet" />
 
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+
     <link href="{{ asset('assets/vendor/summernote/summernote-bs5.min.css') }}" rel="stylesheet" />
 
     <style type="text/css">

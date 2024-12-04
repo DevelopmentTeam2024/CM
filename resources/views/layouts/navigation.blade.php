@@ -150,6 +150,12 @@
                         {{ __('TSR Reports') }}
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->is('reports/generate') ? 'active' : '' }}"
+                        href="{{ url('reports/generate') }}">
+                        {{ __('TSR Reports Generate') }}
+                    </a>
+                </li>
                 @if (auth()->user()->role->value == 'Admin')
                     <li class="nav-item">
                         <a class="nav-link {{ request()->is('users') ? 'active' : '' }}" href="{{ url('users') }}">

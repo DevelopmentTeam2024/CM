@@ -60,7 +60,7 @@
                         @endphp
                         @foreach ($order->files as $file)
                         <a href="{{ asset($file->path) }}" download="{{ $file->filename }}">
-                                {{ str_pad($loop->iteration, 3, '0', STR_PAD_LEFT) }}. {{ $file->filename }}
+                                {{ str_pad($filesCounter, 3, '0', STR_PAD_LEFT) }}. {{ $file->filename }}
                             </a>
                             <br>
                             @php
@@ -71,7 +71,7 @@
                         @foreach ($order->statuses as $status)
                             @foreach ($status->files as $file)
                             <a href="{{ asset($file->path) }}" download="{{ $file->filename }}">
-                                {{ str_pad($loop->iteration, 3, '0', STR_PAD_LEFT) }}. {{ $file->filename }}
+                                {{ str_pad($filesCounter, 3, '0', STR_PAD_LEFT) }}. {{ $file->filename }}
                             </a>
                             <br>
                                 @php

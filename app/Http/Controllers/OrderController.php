@@ -417,7 +417,6 @@ class OrderController extends Controller
             // }])
             ->get();
 
-
         // dd($finishedTSRs );
         // dd($finishedTSRs->pluck('id')->toArray());
 
@@ -430,11 +429,14 @@ class OrderController extends Controller
         // Step 2: Validate the input data
         $data = $request->validate([
             'selected_tsr_id' => 'required|exists:orders,id', // Ensure selected TSR exists
+            'project_id' => 'nullable|integer',
             'products' => 'required|array|min:1',
             'products.*' => 'string',
             'description' => 'nullable|string',
+            'title' => 'nullable|string',
             'revise_reason' => 'string|max:500', // Revise reason is required
             'notes' => 'nullable|string', // Optional notes for the revision
+            'priority' => 'nullable|string',
             'files.*' => 'nullable|file|max:51200', // Optional file uploads
         ], [
             'selected_tsr_id.required' => __('Please select a TSR to revise.'),
@@ -488,53 +490,69 @@ class OrderController extends Controller
         $revisedTSR = $order->replicate();
         $revisedTSR->serial_number = $newSerialNumber; // Set the new serial number
         $revisedTSR->product_code = json_encode($data['products']); // Update the products_code field with new data from the request
-        $revisedTSR->description =$data['description'] . "\n\nTHE REASON OF REVISE IS:\n" . $data['revise_reason'];
+        $revisedTSR->description = $data['description'] . "\n\nTHE REASON OF REVISE IS:\n" . $data['revise_reason'];
+        $revisedTSR->project_id = $data['project_id'] ?? 0;
+        $revisedTSR->title = $data['title'];
         $revisedTSR->save(); // Save the new TSR
 
-        // $newTSRId = $revisedTSR->id;
-
-        // Status::created([
-        //     'order_id' =>$newTSRId,
-        //     'status' => StatusEnum::Submitted,
-        //     'user_id' => Auth::id(),
-        //     'notes' => ($data['notes'] ?? '') . "\nREVISION: " . $data['revise_reason'] . " -- REVISED BY " . Auth::user()->name,
-        // ]);
-
-
         // Step 7: Create a 'Submitted' status for the new TSR
-        $revisedTSR->statuses()->create([
+        $status = $revisedTSR->statuses()->create([
             'status' => 'Submitted',
             'user_id' => Auth::id(),
             'notes' => ($data['notes'] ?? '') . "\nREVISION: " . $data['revise_reason'] . " -- REVISED BY " . Auth::user()->name,
+            'priority' => $data['priority']
         ]);
 
         // Step 8: Handle file uploads (if any)
-        if ($request->has('files')) {
-            foreach ($request->file('files') as $file) {
+        // Handle files separately if they exist
+        if (isset($data['files'])) {
+            $files = $data['files'];
+            unset($data['files']);
+        }
+        // Handle file uploads if provided
+        if (!empty($files)) {
+            foreach ($files as $file) {
                 $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+                $originalName = $file->getClientOriginalName();
+                $fileSize = $file->getSize();
+                $fileExtension = $file->getClientOriginalExtension();
+                $fileMimeType = $file->getMimeType();
+
                 $storagePath = storage_path('attachments/' . $revisedTSR->serial_number);
                 $path = 'attachments/' . $revisedTSR->serial_number . '/' . $filename;
 
+                // Ensure the directory exists
                 if (!file_exists($storagePath)) {
-                    mkdir($storagePath, 0777, true); // Create the directory if it doesn't exist
+                    mkdir($storagePath, 0777, true);
                 }
 
-                $file->move($storagePath, $filename); // Move the file
+                // Move the file and save file metadata
+                $file->move($storagePath, $filename);
 
-                // Save file metadata
                 $fileData = [
                     'user_id' => Auth::id(),
-                    'filename' => $file->getClientOriginalName(),
-                    'filesize' => $file->getSize(),
-                    'filetype' => $file->getMimeType(),
-                    'file_ext' => $file->getClientOriginalExtension(),
+                    'filename' => $originalName,
+                    'filesize' => $fileSize,
+                    'filetype' => $fileMimeType,
+                    'file_ext' => $fileExtension,
                     'path' => $path,
                 ];
 
-                $revisedTSR->files()->create($fileData); // Store file data
+                // $status->files()->firstOrCreate($fileData, $fileData);
+                $revisedTSR->files()->firstOrCreate($fileData, $fileData);
             }
+
         }
 
+        foreach ($order->files()->get() as $file) {
+            $revisedTSR->files()->create($file->getAttributes());
+        }
+        foreach($order->statuses()->get() as $status) {
+            foreach($status->files()->get() as $st)
+            // dump($st->getAttributes());
+            $revisedTSR->files()->create($st->getAttributes());
+        }
+        
         // Step 9: Redirect with success message
         return redirect()->back();
     }

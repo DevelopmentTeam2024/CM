@@ -26,8 +26,8 @@ Route::redirect('/dashboard', 'inquiries');
 
 Route::middleware('auth')->group(function () {
 
-    Route::get('/reports', [ReportController::class, 'showForm'])->name('reports.form');
-    Route::post('/reports/export', [ReportController::class, 'exportReport'])->name('reports.export');
+    Route::get('/reports/generate', [ReportController::class, 'showForm'])->name('reports.form');
+    Route::get('/reports/export', [ReportController::class, 'exportReport'])->name('reports.export');
 
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

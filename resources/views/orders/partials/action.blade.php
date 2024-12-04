@@ -23,25 +23,27 @@
                     </td>
                 </tr>
 
-                <tr>
-                    <th scope="row">{{ __('Project') }}:</th>
-                    <td>
-                        <select name="project_id" id="project_id"
-                            class="form-control @error('project_id') is-invalid @enderror" required>
-                            <!-- <option value="">{{ __('Select a Project') }}</option> -->
-                            @foreach ($projects as $project)
-                                <option value="{{ $project->id }}"
-                                    {{ old('project_id', $order->project_id) == $project->id ? 'selected' : '' }}>
-                                    {{ $project->project_name }}
-                                </option>
-                            @endforeach
-                        </select>
-                        @error('project_id')
-                            <div class="invalid-feedback">{{ $errors->first('project_id') }}</div>
-                        @enderror
-                    </td>
-                </tr>
-
+                @if ($projects->count() > 0)
+                                    <!-- Project Name -->
+                                    <tr>
+                                        <th scope="row">{{ __('Project') }}:</th>
+                                        <td>
+                                            <select name="project_id" id="project_id"
+                                                class="form-control @error('project_id') is-invalid @enderror" required>
+                                                <!-- <option value="">{{ __('Select a Project') }}</option> -->
+                                                @foreach ($projects as $project)
+                                                    <option value="{{ $project->id }}"
+                                                        {{ old('project_id', $order->project_id) == $project->id ? 'selected' : '' }}>
+                                                        {{ $project->project_name }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                            @error('project_id')
+                                                <div class="invalid-feedback">{{ $errors->first('project_id') }}</div>
+                                            @enderror
+                                        </td>
+                                    </tr>
+                            @endif
 
                 <tr>
                     <th scope="row">{{ __('Sub Project') }}:</th>
@@ -91,10 +93,30 @@
                                             <input type="hidden" name="customer_name_hidden" value="{{ $order->customer_name }}">
                                         </td>
                                     </tr>
-
+                                    @if ($projects->count() > 0)
                                     <!-- Project Name -->
                                     <tr>
                                         <th scope="row">{{ __('Project') }}:</th>
+                                        <td>
+                                            <select name="project_id" id="project_id"
+                                                class="form-control @error('project_id') is-invalid @enderror" required>
+                                                <!-- <option value="">{{ __('Select a Project') }}</option> -->
+                                                @foreach ($projects as $project)
+                                                    <option value="{{ $project->id }}"
+                                                        {{ old('project_id', $order->project_id) == $project->id ? 'selected' : '' }}>
+                                                        {{ $project->project_name }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                            @error('project_id')
+                                                <div class="invalid-feedback">{{ $errors->first('project_id') }}</div>
+                                            @enderror
+                                        </td>
+                                    </tr>
+                                    @endif
+                                    <!-- Sub Project Name -->
+                                    <tr>
+                                        <th scope="row">{{ __('Sub Project') }}:</th>
                                         <td>
                                             <input type="text" name="project_name" id="project_name" class="form-control"
                                                 value="{{ old('project_name', $order->project_name) }}" readonly>
@@ -168,6 +190,49 @@
                                                 required>{{ old('revise_reason') }}</textarea>
                                         </td>
                                     </tr>
+                                    
+                                    <tr>
+                                        <th scope="row">{{ __('Attachments') }}:</th>
+                                        @isset($forQutation)
+                                            <td colspan="5">
+                                                @php
+                                                    $filesCounter = 1;
+                                                @endphp
+                                                @foreach ($order->files as $file)
+                                                    <a href="{{ asset($file->path) }}" download="{{ $file->filename }}">
+                                                        {{ str_pad($loop->iteration, 3, '0', STR_PAD_LEFT) }}. {{ $file->filename }}
+                                                    </a>
+                                                    <br>
+                                                    @php
+                                                        $filesCounter++;
+                                                    @endphp
+                                                @endforeach
+
+                                                @foreach ($order->statuses as $status)
+                                                    @foreach ($status->files as $file)
+                                                        <a href="{{ asset($file->path) }}" download="{{ $file->filename }}"
+                                                            class="btn btn-secondary">
+                                                            {{ str_pad($filesCounter, 3, '0', STR_PAD_LEFT) }}.{{ $file->file_ext }}
+                                                        </a>
+                                                        @php
+                                                            $filesCounter++;
+                                                        @endphp
+                                                    @endforeach
+                                                @endforeach
+                                            </td>
+                                        @else
+                                            <td colspan="5">
+                                                @foreach ($order->files as $file)
+                                                    <a href="{{ asset($file->path) }}" download="{{ $file->filename }}">
+                                                        {{ str_pad($loop->iteration, 3, '0', STR_PAD_LEFT) }}. {{ $file->filename }}
+                                                    </a>
+                                                    <br>
+                                                @endforeach
+                                            </td>
+                                        @endisset
+                                    </tr>
+
+
             @endif
 
             @if ($action['notes']['shown'])
