@@ -132,6 +132,7 @@
                             <th>Project</th>
                             <th>Product Code</th>
                             <th>User</th>
+                            <th>Customer</th>
                             <th>Approved Date</th>
                             <th>Accepted Date</th>
                             <th>Finished Date</th>
@@ -188,6 +189,7 @@
                             row.project,
                             row.product_code,
                             row.user_name,
+                            row.customer_name,
                             row.approved_date,
                             row.accepted_date,
                             row.finished_date,
@@ -263,12 +265,48 @@
 
 
 
+// $('#exportToPDF').on('click', function () {
+//     const { jsPDF } = window.jspdf;
+//     var doc = new jsPDF();
+//     var tableContent = [];
+
+//     // Collect table content (header and body)
+//     $('#reportTable thead tr').each(function () {
+//         var row = [];
+//         $(this).find('th').each(function () {
+//             row.push($(this).text());
+//         });
+//         tableContent.push(row);
+//     });
+
+//     $('#reportTable tbody tr').each(function () {
+//         var row = [];
+//         $(this).find('td').each(function () {
+//             row.push($(this).text());
+//         });
+//         tableContent.push(row);
+//     });
+
+//     // Add table content to PDF without any extra styling (like Excel export)
+//     doc.autoTable({
+//         head: tableContent.slice(0, 1), // Table header
+//         body: tableContent.slice(1),    // Table rows
+//         theme: 'striped',                 // Remove any table styling
+//         headStyles: { fillColor: [0, 0, 0], fontSize: 8, fontStyle: 'normal', fontColor: 'black' }, // Simple header styling
+//         styles: { fontSize: 6, cellPadding: 1 }, // Simple body styles, no extra padding or large font sizes
+//     });
+
+//     // Save the PDF
+//     doc.save('report.pdf');
+// });
+
+
 $('#exportToPDF').on('click', function () {
     const { jsPDF } = window.jspdf;
     var doc = new jsPDF();
     var tableContent = [];
 
-    // Collect table content (header and body)
+    // Collect table header content
     $('#reportTable thead tr').each(function () {
         var row = [];
         $(this).find('th').each(function () {
@@ -277,26 +315,37 @@ $('#exportToPDF').on('click', function () {
         tableContent.push(row);
     });
 
-    $('#reportTable tbody tr').each(function () {
+    // Collect all table body content (all rows including hidden ones)
+    var allData = $('#reportTable').DataTable().rows({ search: 'applied' }).data();
+
+    allData.each(function (rowData) {
         var row = [];
-        $(this).find('td').each(function () {
-            row.push($(this).text());
+        $(rowData).each(function (index, value) {
+            // Wrap the text if it's too long
+            if (index === 3) { // Assuming the "projects" column is the 4th column (index starts at 0)
+                value = doc.splitTextToSize(value, 50); // Wrap text to max width of 50 units
+            }
+            row.push(value);
         });
         tableContent.push(row);
     });
 
-    // Add table content to PDF without any extra styling (like Excel export)
+    // Add table content to PDF with controlled column widths
     doc.autoTable({
-        head: tableContent.slice(0, 1), // Table header
+        head: [tableContent[0]], // Table header
         body: tableContent.slice(1),    // Table rows
-        theme: 'plain',                 // Remove any table styling
-        headStyles: { fillColor: [255, 255, 255], fontSize: 8, fontStyle: 'normal', fontColor: 'black' }, // Simple header styling
-        styles: { fontSize: 8, cellPadding: 2 }, // Simple body styles, no extra padding or large font sizes
+        theme: 'striped',                 // Simple striped styling
+        headStyles: { fillColor: [0, 0, 0], fontSize: 8, fontStyle: 'normal', textColor: 'white' }, // Simple header styling
+        styles: { fontSize: 6, cellPadding: 0.5 }, // Simple body styles
+        columnStyles: {
+            3: { cellWidth: 50 }, // Set "projects" column width (adjust index as per your table)
+        },
     });
 
     // Save the PDF
     doc.save('report.pdf');
 });
+
 
 });
     </script>

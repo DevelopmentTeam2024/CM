@@ -7,6 +7,7 @@ use App\Models\Customer;
 use App\Models\Project; 
 use Illuminate\Http\Request;
 use App\Services\UserService;
+use Carbon\Carbon;
 class ReportController extends Controller
 {
     public function showForm()
@@ -84,10 +85,19 @@ public function exportReport(Request $request)
             'project' => $order->project->project_name ?? 'N/A',
             'product_code' => $order->product_code ?? 'N/A',
             'user_name' => $order->user->name ?? 'N/A',
-            'approved_date' => $statuses['Approved']->created_at ?? 'N/A',
-            'accepted_date' => $statuses['Accepted']->created_at ?? 'N/A',
-            'finished_date' => $statuses['Finished']->created_at ?? 'N/A',
-            'finished_last_date' => $statuses['Finished']->created_at ?? 'N/A',
+            'customer_name' => $order->customer_name ?? 'N/A',
+            'approved_date' => isset($statuses['Approved']->created_at) 
+                ? Carbon::parse($statuses['Approved']->created_at)->format('Y-m-d \T\i\m\e: H:i') 
+                : 'N/A',
+            'accepted_date' => isset($statuses['Accepted']->created_at) 
+                ? Carbon::parse($statuses['Accepted']->created_at)->format('Y-m-d \T\i\m\e: H:i') 
+                : 'N/A',
+            'finished_date' => isset($statuses['Finished']->created_at) 
+                ? Carbon::parse($statuses['Finished']->created_at)->format('Y-m-d \T\i\m\e: H:i') 
+                : 'N/A',
+            'finished_last_date' => isset($statuses['Finished']->created_at) 
+                ? Carbon::parse($statuses['Finished']->created_at)->format('Y-m-d \T\i\m\e: H:i') 
+                : 'N/A',
         ];
     });
 
