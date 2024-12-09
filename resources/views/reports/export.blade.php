@@ -41,17 +41,14 @@
                                     <td>
                                         <select name="employee" class="form-select">
                                             <option value="all">{{ __('All Employees') }}</option>
-                                            <option value="all_sales">{{ __('All Sales') }}</option>
-                                            @foreach ($salesEmployees as $employee)
-                                                <option value="{{ $employee->id }}" {{ old('sales_employee') == $employee->id ? 'selected' : '' }}>
-                                                      -- {{ $employee->name }}
+                                            @foreach ($salesEmployees as $salesEmployee)
+                                                <option value="{{ $salesEmployee->id }}" {{ old('employee') == $salesEmployee->id ? 'selected' : '' }}>
+                                                      -- {{ $salesEmployee->name }}
                                                 </option>
                                             @endforeach
-
-                                            <option value="all_tech">{{ __('All Technical') }}</option>
-                                            @foreach ($techEmployees as $employee)
-                                                <option value="{{ $employee->id }}" {{ old('sales_employee') == $employee->id ? 'selected' : '' }}>
-                                                      -- {{ $employee->name }}
+                                            @foreach ($techEmployees as $techEmployee)
+                                                <option value="{{ $techEmployee->id }}" {{ old('employee') == $techEmployee->id ? 'selected' : '' }}>
+                                                      -- {{ $techEmployee->name }}
                                                 </option>
                                             @endforeach
                                         </select>
@@ -126,18 +123,21 @@
 
                 <table id="reportTable" class="table table-striped">
                     <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Title</th>
-                            <th>Project</th>
-                            <th>Product Code</th>
-                            <th>User</th>
-                            <th>Customer</th>
-                            <th>Approved Date</th>
-                            <th>Accepted Date</th>
-                            <th>Finished Date</th>
-                            <th>Last Finished Date</th>
-                        </tr>
+                    <tr>
+    <th>ID</th>
+    <th>Title</th>
+    <th>Serial Number</th>  
+    <th>Customer</th>
+    <th>Project</th>
+    <th>Sub Project</th>
+    <th>Product Code</th>
+    <th>Sales Employee</th>
+    <th>T/O Employee</th>
+    <th>Submitted Date</th>
+    <th>Work Time</th>
+    
+</tr>
+
                     </thead>
                     <tbody></tbody>
                 </table>
@@ -174,30 +174,47 @@
 
         // Generate report button (ajax loading data)
         $('#generateReportButton').on('click', function () {
+        // table.clear();
             var formData = $('#reportForm').serialize();
 
             $.ajax({
-                url: "{{ route('reports.export') }}",
-                type: 'GET',
-                data: formData,
-                success: function (data) {
-                    table.clear();
-                    data.forEach(function (row) {
-                        table.row.add([
-                            row.id,
-                            row.title,
-                            row.project,
-                            row.product_code,
-                            row.user_name,
-                            row.customer_name,
-                            row.approved_date,
-                            row.accepted_date,
-                            row.finished_date,
-                            row.finished_last_date,
-                        ]).draw();
-                    });
+    url: "{{ route('reports.export') }}",
+    type: 'GET',
+    data: formData,
+    success: function (data) {
+        // Clear existing table data
+        table.clear();
+            // Loop through the data and add each row to the table
+            data.forEach(function (row) {
+                // Decode product_code if it's a JSON string
+                let productCodes = '';
+                try {
+                    // Check if product_code is a valid JSON string
+                    let codes = JSON.parse(row.product_code);
+                    // Create a list of product codes (each on a new line)
+                    productCodes = codes.map(code => `<div>-${code}</div>`).join('');
+                } catch (e) {
+                    // If not JSON, just show the product_code as is
+                    productCodes = `- ${row.product_code}`;
                 }
+
+                table.row.add([
+                    row.id,
+                    row.title,
+                    '<a href="{{ url('inquiries') }}/' + row.id + '">' + row.serial_num + '</a>',
+                    row.customer_name,
+                    row.project,
+                    row.sub_project,
+                    productCodes,  // Display the decoded product codes
+                    row.user_name,
+                    row.checker_name,
+                    row.submitted_date,
+                    row.work_time,
+                ]).draw();
             });
+    }
+});
+
         });
 
            // Export to Excel
@@ -380,3 +397,4 @@ $('#exportToPDF').on('click', function () {
 </script>
 
 </x-app-layout>
+    

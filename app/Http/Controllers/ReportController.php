@@ -2,107 +2,141 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Order; 
+use Carbon\Carbon;
+use App\Models\User;
+use App\Models\Order;
+use App\Models\Project;
 use App\Models\Customer;
-use App\Models\Project; 
 use Illuminate\Http\Request;
 use App\Services\UserService;
-use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
+
 class ReportController extends Controller
 {
     public function showForm()
     {
         $projects = Project::all();
         $customers = Customer::all();
-        $techEmployees = \App\Models\User::where('department', 'Technical Office')->get();
-        $salesEmployees = \App\Models\User::where('department', 'Sales')->get();
+        $techEmployees = User::where('department', 'Technical Office')->get();
+        $salesEmployees = User::where('department', 'Sales')->get();
         $tsrTypes = \App\Enum\TSRTypesEnum::list();
 
-        return view('reports.export', compact('projects', 'customers', 'salesEmployees', 'techEmployees',  'tsrTypes'));
+        return view('reports.export', compact('projects', 'customers', 'salesEmployees', 'techEmployees', 'tsrTypes'));
     }
 
     public function getCustomer(int $code)
-{
-    $customers = UserService::getEmployeeClients($code);
-    dd($customers);
-    return response()->json($customers);
-}
+    {
+        $customers = UserService::getEmployeeClients($code);
+        dd($customers);
+        return response()->json($customers);
+    }
 
-public function exportReport(Request $request)
-{
-    $validated = $request->validate([
-        'start_date' => 'required|date',
-        'end_date' => 'required|date|after_or_equal:start_date',
-        'employee' => 'nullable|string',
-        'customer' => 'nullable|string',
-        'tsr_type' => 'nullable|string',
-        'project' => 'nullable|string',
-    ]);
+    public function exportReport(Request $request)
+    {
+        $validated = $request->validate([
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'employee' => 'nullable|string',
+            'customer' => 'nullable|string',
+            'tsr_type' => 'nullable|string',
+            'project' => 'nullable|string',
+        ]);
 
-    $orders = Order::with(['project', 'customer', 'user', 'statuses'])
-        ->when($validated['start_date'] && $validated['end_date'], function ($query) use ($validated) {
-            $query->whereBetween('created_at', [$validated['start_date'], $validated['end_date']]);
-        })
-        ->when($validated['employee'], function ($query) use ($validated) {
-            if ($validated['employee'] === 'all_sales') {
-                // Filter only sales employees
-                $query->whereHas('user', function ($q) {
-                    $q->where('department', 'Sales');
-                });
-            } elseif ($validated['employee'] === 'all_tech') {
-                // Filter only technical office employees
-                $query->whereHas('user', function ($q) {
-                    $q->where('department', 'Technical Office');
-                });
-            } elseif ($validated['employee'] === 'all') {
-                // Filter all employees (Sales + Technical Office)
-                $query->whereHas('user', function ($q) {
-                    $q->whereIn('department', ['Sales', 'Technical Office']);
-                });
-            } else {
-                // Filter a specific user by ID
-                $query->where('user_id', $validated['employee']);
+        $orders = Order::with(['project', 'customer', 'user', 'statuses', 'statuses.checker']);
+
+        $filters = [];
+
+        if (!empty($validated['start_date']) && !empty($validated['end_date'])) {
+            $filters[] = ['created_at', '>=', $validated['start_date']];
+            $filters[] = ['created_at', '<=', $validated['end_date']];
+        }
+
+        if (!empty($validated['customer']) && $validated['customer'] !== 'all') {
+            $filters[] = ['orders.customer_id', $validated['customer']];
+        }
+
+        if (!empty($validated['project']) && $validated['project'] !== 'all') {
+            $filters[] = ['orders.project_id', $validated['project']];
+        }
+
+        if (!empty($validated['tsr_type']) && $validated['tsr_type'] !== 'all') {
+            $filters[] = ['orders.title', $validated['tsr_type']];
+        }
+
+        if (!empty($validated['employee']) && $validated['employee'] !== 'all') {
+            $user = User::find($validated['employee']);
+            if ($user) {
+                if ($user->department->value == 'Sales') {
+                    $filters[] = ['orders.user_id', $validated['employee']];
+                } elseif ($user->department->value == 'Technical Office') {
+                    $orders->whereHas('statuses', function ($subQuery) use ($validated) {
+                        $subQuery->where('statuses.checker_id', $validated['employee']);
+                    });
+                }
             }
-        })
+        }
+
+        $orders = $orders->where($filters)->get();
+
+        // $orders = Order::with(['project', 'customer', 'user', 'statuses'])
+        // ->when($validated['start_date'] && $validated['end_date'], function ($query) use ($validated) {
+        //     $query->whereBetween('created_at', [$validated['start_date'], $validated['end_date']]);
+        // })
+        // ->when($validated['employee'] && $validated['employee'] !== 'all', function ($query) use ($validated) {
+        //     $user = User::find($validated['employee']);
+        //     if ($user) {
+        //         if ($user->department->value == 'Sales') {
+        //             $query->where('orders.user_id', $validated['employee']);
+        //         } elseif ($user->department->value == 'Technical Office') {
+        //             $query->whereHas('statuses', function ($subQuery) use ($validated) {
+        //                 $subQuery->where('statuses.checker_id', $validated['employee']);
+        //             });
+        //         }
+        //     }
+        // })
         
-        ->when($validated['customer'] && $validated['customer'] !== 'all', function ($query) use ($validated) {
-            $query->where('customer_id', $validated['customer']);
-        })
-        ->when($validated['project'] && $validated['project'] !== 'all', function ($query) use ($validated) {
-            $query->where('project_id', $validated['project']);
-        })
-        ->when($validated['tsr_type'] && $validated['tsr_type'] !== 'all', function ($query) use ($validated) {
-            $query->where('title', $validated['tsr_type']);
-        })
-        ->get();
+        // ->when($validated['customer'] && $validated['customer'] !== 'all', function ($query) use ($validated) {
+        //     $query->where('orders.customer_id', $validated['customer']);
+        // })
+        // ->when($validated['project'] && $validated['project'] !== 'all', function ($query) use ($validated) {
+        //     $query->where('orders.project_id', $validated['project']);
+        // })
+        // ->when($validated['tsr_type'] && $validated['tsr_type'] !== 'all', function ($query) use ($validated) {
+        //     $query->where('orders.title', $validated['tsr_type']);
+        // })
+        // ->get();
+    
 
-    $result = $orders->map(function ($order) {
-        $statuses = $order->statuses->keyBy('status.name');
-
-        return [
-            'id' => $order->id,
-            'title' => $order->title,
-            'project' => $order->project->project_name ?? 'N/A',
-            'product_code' => $order->product_code ?? 'N/A',
-            'user_name' => $order->user->name ?? 'N/A',
-            'customer_name' => $order->customer_name ?? 'N/A',
-            'approved_date' => isset($statuses['Approved']->created_at) 
-                ? Carbon::parse($statuses['Approved']->created_at)->format('Y-m-d \T\i\m\e: H:i') 
-                : 'N/A',
-            'accepted_date' => isset($statuses['Accepted']->created_at) 
-                ? Carbon::parse($statuses['Accepted']->created_at)->format('Y-m-d \T\i\m\e: H:i') 
-                : 'N/A',
-            'finished_date' => isset($statuses['Finished']->created_at) 
-                ? Carbon::parse($statuses['Finished']->created_at)->format('Y-m-d \T\i\m\e: H:i') 
-                : 'N/A',
-            'finished_last_date' => isset($statuses['Finished']->created_at) 
-                ? Carbon::parse($statuses['Finished']->created_at)->format('Y-m-d \T\i\m\e: H:i') 
-                : 'N/A',
-        ];
-    });
-
-    return response()->json($result);
-}
+        
+        $result = $orders->flatMap(function ($order) {
+            $acceptedStatus = $order->statuses->where('status.name', 'Accepted')->first();
+            $finishedStatus = $order->statuses->where('status.name', 'Finished')->first();
+        
+            $work_time = 'N/A';
+            if ($acceptedStatus && $finishedStatus) {
+                $work_time = Carbon::parse($acceptedStatus->created_at)->diffForHumans(Carbon::parse($finishedStatus->created_at), true);
+            }
+        
+            return $order->statuses->map(function ($status) use ($order, $work_time) {
+                return [
+                    'id' => $order->id,
+                    'title' => $order->title,
+                    'serial_num' => $order->serial_number,
+                    'project' => $order->project->project_name ?? 'N/A',
+                    'sub_project' => $order->project_name ?? 'N/A',
+                    'product_code' => $order->product_code ?? 'N/A',
+                    'user_name' => $order->user->name ?? 'N/A',
+                    'checker_name' => $status->checker->name ?? 'N/A', // Checker name for each status
+                    'status' => $status->status->name ?? 'N/A', // Status name
+                    'customer_name' => $order->customer_name ?? 'N/A',
+                    'submitted_date' => Carbon::parse($order->created_at)->format('Y-m-d H:i'),
+                    'work_time' => $work_time,
+                ];
+            });
+        });
+        
+        return response()->json($result);
+    }
 
 }
 
@@ -200,7 +234,7 @@ public function exportReport(Request $request)
 //                     break;
 //             }
 //         }
-    
+
 //         $sheet->setCellValue("G{$startRow}", $approvedDate);
 //         $sheet->setCellValue("I{$startRow}", $acceptedDate);
 //         $sheet->setCellValue("J{$startRow}", $approvedExpectedDate);
@@ -324,3 +358,73 @@ public function exportReport(Request $request)
 
 //     return response()->download($tempPath)->deleteFileAfterSend(true);
 // }
+
+
+
+
+
+
+
+
+// $orders = Order::with(['project', 'customer', 'user', 'statuses'])
+        //     ->when($validated['start_date'] && $validated['end_date'], function ($query) use ($validated) {
+        //         $query->whereBetween('created_at', [$validated['start_date'], $validated['end_date']]);
+        //     })
+        //     ->when($validated['employee'], function ($query) use ($validated) {
+        //         if ($validated['employee'] === 'all_sales') {
+        //             $query->whereIn('orders.id', function ($subQuery) {
+        //                 $subQuery->select('order_id')
+        //                     ->distinct()
+        //                     ->from('statuses')
+        //                     ->join('users as u1', 'statuses.user_id', '=', 'u1.id')
+        //                     ->join('users as u2', 'statuses.checker_id', '=', 'u2.id')
+        //                     ->where(function ($query) {
+        //                         $query->where('u1.department', 'Sales')
+        //                             ->orWhere('u2.department', 'Sales');
+        //                     });
+        //             });
+        //         } elseif ($validated['employee'] === 'all_tech') {
+        //             $query->whereIn('orders.id', function ($subQuery) {
+        //                 $subQuery->select('order_id')
+        //                     ->distinct()
+        //                     ->from('statuses')
+        //                     ->join('users as u1', 'statuses.user_id', '=', 'u1.id')
+        //                     ->join('users as u2', 'statuses.checker_id', '=', 'u2.id')  
+        //                     ->where(function ($query) {
+        //                         $query->where('u1.department', 'Technical Office')
+        //                             ->orWhere('u2.department', 'Technical Office');
+        //                     });
+        //             });
+        //         } elseif ($validated['employee'] === 'all') {
+        //             $query->whereIn('orders.id', function ($subQuery) {
+        //                 $subQuery->select('order_id')
+        //                     ->distinct()
+        //                     ->from('statuses')
+        //                     ->join('users as u1', 'statuses.user_id', '=', 'u1.id')  
+        //                     ->join('users as u2', 'statuses.checker_id', '=', 'u2.id')  
+        //                     ->whereIn('u1.department', ['Sales', 'Technical Office'])  
+        //                     ->orWhereIn('u2.department', ['Sales', 'Technical Office']);  
+    
+        //             });
+        //         } else {
+        //             $query->whereIn('orders.id', function ($subQuery) use ($validated) {
+        //                 $subQuery->select('order_id')
+        //                     ->distinct()
+        //                     ->from('statuses')
+        //                     ->where(function ($statusQuery) use ($validated) {
+        //                         $statusQuery->where('user_id', $validated['employee'])
+        //                             ->orWhere('checker_id', $validated['employee']);
+        //                     });
+        //             });
+        //         }
+        //     })
+        //     ->when($validated['customer'] && $validated['customer'] !== 'all', function ($query) use ($validated) {
+        //         $query->where('customer_id', $validated['customer']);
+        //     })
+        //     ->when($validated['project'] && $validated['project'] !== 'all', function ($query) use ($validated) {
+        //         $query->where('project_id', $validated['project']);
+        //     })
+        //     ->when($validated['tsr_type'] && $validated['tsr_type'] !== 'all', function ($query) use ($validated) {
+        //         $query->where('title', $validated['tsr_type']);
+        //     })
+        //     ->get();

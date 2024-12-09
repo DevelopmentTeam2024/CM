@@ -55,7 +55,7 @@
                                     <th scope="row">{{ __('Projects') }}:</th>
                                     <td>
                                         <select name="project_id" id="project_id"
-                                            class="form-control @error('project_id') is-invalid @enderror" required>
+                                            class="form-control @error('project_id') is-invalid @enderror">
                                             <!-- <option value="">{{ __('Select a Project') }}</option> -->
                                             @foreach ($projects as $project)
                                                 <option value="{{ $project->id }}"
